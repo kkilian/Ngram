@@ -1,6 +1,5 @@
 import numpy as np
 
-
 class Board(object):
     """
     Class representing a game board.
@@ -198,33 +197,21 @@ class HexBoard(Board):
 
     
 class HivePiece(object):
-    piece_name_to_number = {}
+    """
+    Class representing a piece in the game.
+    """
 
     def __init__(self, color, kind, number):
-        self.color = color
-        self.kind = kind
-        self.number = number
+        self.color = color     
+        self.kind = kind        
+        self.number = number    
 
-        piece_name = self.__repr__()
-        if piece_name not in HivePiece.piece_name_to_number:
-            HivePiece.piece_name_to_number[piece_name] = len(HivePiece.piece_name_to_number) + 1
 
     def __repr__(self):
         return "%s%s%s" % (self.color, self.kind, self.number)
 
-    def encode_piece_name(self):
-        """
-        Encode the piece name based on color, kind, and number.
-        Example: wS1, bG2, etc.
-        """
-        return f"{self.color}{self.kind}{self.number}"
-
-    @staticmethod
-    def get_piece_number(encoded_name):
-        """
-        Get the numerical value associated with the encoded piece name.
-        """
-        return HivePiece.piece_name_to_number.get(encoded_name, None)
+class HiveException(Exception):
+    pass
 
 class Hive(object):
 
@@ -341,13 +328,7 @@ class Hive(object):
         pic.append(str(piece))
 
         return targetCell
-    
-    def get_played_pieces_and_positions(self):
-        played_pieces_positions = {}
-        for piece_name, piece_info in self.playedPieces.items():
-            played_pieces_positions[piece_name] = piece_info['cell']
 
-        return played_pieces_positions
 
 
     def _occupied_surroundings(self, cell):
@@ -379,6 +360,46 @@ class Hive(object):
         queen = HivePiece(color, 'Q', 1)
         pieceSet[str(queen)] = queen
         return pieceSet
+    
+    def encode_piece_set(self, piece_set):
+        piece_names = list(piece_set.keys())
+
+        num_pieces = len(piece_names)
+        encoding_array = np.zeros((num_pieces,), dtype=np.int)
+
+        for i, piece_name in enumerate(piece_names):
+            piece = piece_set[piece_name]
+            color = piece.color
+            kind = piece.kind
+            number = piece.number
+
+            if color == 'w':
+                encoding_array[i * 11] = 1
+            elif color == 'b':
+                encoding_array[i * 11 + 1] = 1
+
+            if kind == 'A':
+                encoding_array[i * 11 + 2] = 1
+            elif kind == 'G':
+                encoding_array[i * 11 + 3] = 1
+            elif kind == 'S':
+                encoding_array[i * 11 + 4] = 1
+            elif kind == 'B':
+                encoding_array[i * 11 + 5] = 1
+            elif kind == 'Q':
+                encoding_array[i * 11 + 6] = 1
+
+            if number == 1:
+                encoding_array[i * 11 + 7] = 1
+            elif number == 2:
+                encoding_array[i * 11 + 8] = 1
+            elif number == 3:
+                encoding_array[i * 11 + 9] = 1
+
+        encoding_dict = dict(zip(piece_names, encoding_array))
+
+        return encoding_dict
+
 
 class HiveView(object):
     def __init__(self, game):
@@ -440,25 +461,6 @@ class GameStatus(object):
         view_str += str(self.view).replace(last_move_piece_name, formatted_last_move_piece_name) + "\n"
 
         return view_str
-    def get_piece_position(self, moves, data):
-        self.moves = len(data)
-        pp = []
-        view_str = ""
-        for i in range(1, moves + 1):
-            if i == 1:
-                self.game.action('play', (data[i][0]))
-            else:
-                if isinstance(data[i][1], str):
-                    self.game.action('play', (data[i][0], data[i][1], data[i][2]))
-                elif isinstance(data[i][2], str):
-                    self.game.action('play', (data[i][0], data[i][2], data[i][1]))
-            piece_position = self.game.get_played_pieces_and_positions()
-            pp.append(piece_position)
-        return pp
-
-
-
-
 
 
 
